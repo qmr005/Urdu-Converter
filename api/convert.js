@@ -11,31 +11,22 @@ export default async function handler(req, res) {
 
   const isRTU = mode !== 'utr';
 
-  const systemPrompt = isRTU
-    ? `You are an expert Roman Urdu to Urdu Nastaliq converter. Convert Roman Urdu text into proper Urdu script.
-Rules:
-- Convert EVERY Roman Urdu word to Urdu script
-- Keep English words, names, numbers as-is
-- Preserve punctuation and line breaks
-- Output ONLY the converted Urdu text, nothing else
-${poetry ? '- Format as poetry: each line on its own line' : ''}`
-    : `You are an expert Urdu to Roman Urdu converter. Convert Urdu script to Roman Urdu using common Pakistani spelling. Output ONLY the converted text.`;
+  const prompt = isRTU
+    ? `You are an expert Roman Urdu to Urdu Nastaliq converter. Convert the following Roman Urdu text into proper Urdu script. Rules: Convert EVERY Roman Urdu word to Urdu script. Keep English words/names/numbers as-is. Preserve punctuation and line breaks. Output ONLY the converted Urdu text, nothing else.${poetry ? ' Format as poetry with each line separate.' : ''}\n\nText to convert:\n${text}`
+    : `Convert this Urdu script to Roman Urdu using common Pakistani spelling. Output ONLY the converted text, nothing else.\n\nText:\n${text}`;
 
   try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': process.env.ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 1000,
-        system: systemPrompt,
-        messages: [{ role: 'user', content: text }],
-      }),
-    });
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${process.env.GOOGLE_API_KEY}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: { temperature: 0.1, maxOutputTokens: 1000 }
+        }),
+      }
+    );
 
     if (!response.ok) {
       const err = await response.json();
@@ -43,10 +34,10 @@ ${poetry ? '- Format as poetry: each line on its own line' : ''}`
     }
 
     const data = await response.json();
-    const result = data.content?.find(b => b.type === 'text')?.text?.trim() || '';
+    const result = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
     return res.status(200).json({ result });
 
   } catch (err) {
     return res.status(500).json({ error: err.message || 'Server error' });
   }
-    }
+      }
