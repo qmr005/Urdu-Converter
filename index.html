@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Roman Urdu Converter</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;700&family=Noto+Naskh+Arabic:wght@400;700&family=Amiri:ital,wght@0,400;0,700;1,400&family=Lateef:wght@400;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:        #f7f5f0;
+  --surface:   #ffffff;
+  --border:    #e2ddd6;
+  --border2:   #ccc8c0;
+  --text:      #1a1714;
+  --text-dim:  #7a7570;
+  --text-mid:  #4a4540;
+  --accent:    #2d6a4f;
+  --accent-lt: #e8f4ee;
+  --accent-dk: #1b4332;
+  --gold:      #b5821a;
+  --red:       #c0392b;
+  --shadow:    0 1px 3px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.06);
+  --radius:    10px;
+  --radius-sm: 6px;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  min-height: 100vh;
+}
+
+/* TOP BAR */
+.topbar {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0 24px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.brand { display: flex; align-items: center; gap: 10px; }
+
+.brand-icon {
+  width: 32px; height: 32px;
+  background: var(--accent);
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Noto Nastaliq Urdu', serif;
+  font-size: 14px;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.brand-name  { font-weight: 600; font-size: 15px; color: var(--text); }
+.brand-sub   { font-size: 11px; color: var(--text-dim); font-weight: 400; }
+
+/* MAIN */
+.main {
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 24px 20px 40px;
+}
+
+/* CONTROLS */
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.toggle-group {
+  display: flex;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.toggle-btn {
+  padding: 7px 14px;
+  background: transparent;
+  border: none;
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.toggle-btn.active { background: var(--accent); color: #fff; }
+.toggle-btn:not(.active):hover { background: var(--bg); color: var(--text); }
+
+.font-select-wrap { display: flex; align-items: center; gap: 6px; margin-left: auto; }
+.font-select-label { font-size: 11px; color: var(--text-dim); font-weight: 500; white-space: nowrap; }
+
+.font-select {
+  padding: 6px 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  color: var(--text);
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.font-select:focus { border-color: var(--accent); }
+
+/* EDITOR CARD */
+.editor-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+
+.editor-grid { display: grid; grid-template-columns: 1fr 1px 1fr; }
+.divider-col { background: var(--border); }
+
+.editor-pane { display: flex; flex-direction: column; min-height: 280px; }
+
+.pane-header {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg);
+}
+
+.pane-label { font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-dim); }
+.pane-label.input-lbl  { color: var(--gold); }
+.pane-label.output-lbl { color: var(--accent); }
+
+.char-badge {
+  font-size: 10px; color: var(--text-dim);
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: 4px; padding: 1px 6px;
+}
+
+textarea {
+  flex: 1; border: none; outline: none;
+  padding: 16px; font-size: 15px; line-height: 1.9;
+  resize: none; background: transparent;
+  color: var(--text); width: 100%;
+}
+
+#inputArea { font-family: 'Inter', sans-serif; direction: ltr; }
+#inputArea::placeholder { color: var(--border2); }
+
+#outputArea {
+  direction: rtl; text-align: right;
+  color: var(--accent-dk); cursor: default; caret-color: transparent;
+}
+
+#outputArea::placeholder { color: var(--border2); direction: rtl; text-align: right; }
+
+#outputArea.loading {
+  background: linear-gradient(90deg, var(--bg) 25%, var(--border) 50%, var(--bg) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.2s infinite;
+  color: transparent; user-select: none;
+}
+
+@keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+.pane-footer {
+  padding: 8px 12px; border-top: 1px solid var(--border);
+  display: flex; gap: 6px; background: var(--bg); flex-wrap: wrap;
+}
+
+.btn {
+  padding: 5px 12px; border-radius: var(--radius-sm);
+  font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 500;
+  cursor: pointer; transition: all 0.15s; border: 1px solid transparent;
+  display: inline-flex; align-items: center; gap: 5px; white-space: nowrap;
+}
+
+.btn-ghost { background: transparent; border-color: var(--border); color: var(--text-mid); }
+.btn-ghost:hover { border-color: var(--border2); background: var(--bg); color: var(--text); }
+
+.btn-copy { background: var(--accent-lt); color: var(--accent-dk); border-color: #a8d5be; }
+.btn-copy:hover { background: #c8e8d8; }
+.btn-copy.copied { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+.btn-wa { background: #e8f8ef; color: #1b7a3e; border-color: #a8dbb8; }
+.btn-wa:hover { background: #d0f0df; }
+
+/* TOOLBAR */
+.toolbar {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 10px 16px;
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; flex-wrap: wrap; margin-bottom: 16px; box-shadow: var(--shadow);
+}
+
+.toolbar-left { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+
+.check-label {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 12px; color: var(--text-mid); cursor: pointer; user-select: none;
+}
+
+.check-label input[type=checkbox] { accent-color: var(--accent); cursor: pointer; }
+.check-label:hover { color: var(--text); }
+
+.convert-btn {
+  padding: 8px 24px; background: var(--accent); color: #fff;
+  border: none; border-radius: var(--radius-sm);
+  font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 600;
+  cursor: pointer; transition: all 0.15s;
+  display: flex; align-items: center; gap: 8px;
+}
+
+.convert-btn:hover { background: var(--accent-dk); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(45,106,79,0.3); }
+.convert-btn:active { transform: translateY(0); }
+.convert-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+.spinner {
+  width: 14px; height: 14px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: #fff; border-radius: 50%;
+  animation: spin 0.7s linear infinite; display: none;
+}
+
+.converting .spinner { display: block; }
+.converting .btn-icon { display: none; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* STATS */
+.stats-row { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+
+.stat-pill {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 8px 14px;
+  flex: 1; min-width: 80px; text-align: center; box-shadow: var(--shadow);
+}
+
+.stat-num { font-size: 20px; font-weight: 600; color: var(--accent); display: block; line-height: 1.2; }
+.stat-lbl { font-size: 10px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.06em; font-weight: 500; }
+
+/* QUICK PHRASES */
+.section-head { font-size: 11px; font-weight: 600; color: var(--text-dim); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 10px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+
+.chip {
+  padding: 5px 12px; background: var(--surface);
+  border: 1px solid var(--border); border-radius: 20px;
+  font-size: 12px; color: var(--text-mid); cursor: pointer;
+  transition: all 0.15s; font-family: 'Inter', sans-serif;
+}
+
+.chip:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-lt); }
+
+/* ERROR */
+.error-bar {
+  display: none; background: #fef0ee; border: 1px solid #f5c6c0;
+  border-radius: var(--radius-sm); padding: 10px 14px;
+  font-size: 12px; color: var(--red); margin-bottom: 12px;
+  align-items: center; gap: 8px;
+}
+
+.error-bar.show { display: flex; }
+
+/* FOOTER */
+.footer {
+  text-align: center; padding: 18px 20px 28px;
+  font-size: 12px; color: var(--text-dim);
+  font-family: 'Inter', sans-serif;
+}
+
+.footer strong { color: var(--text-mid); }
+
+/* TOAST */
+.toast {
+  position: fixed; bottom: 24px; left: 50%;
+  transform: translateX(-50%) translateY(80px);
+  background: var(--text); color: var(--bg);
+  padding: 8px 18px; border-radius: 20px;
+  font-size: 13px; font-weight: 500; z-index: 100;
+  transition: transform 0.25s ease; white-space: nowrap; pointer-events: none;
+}
+
+.toast.show { transform: translateX(-50%) translateY(0); }
+
+/* MOBILE */
+@media (max-width: 600px) {
+  .topbar { padding: 0 14px; }
+  .main { padding: 14px 12px 32px; }
+  .editor-grid { grid-template-columns: 1fr; }
+  .divider-col { display: none; }
+  .editor-pane { min-height: 180px; }
+  .editor-pane:first-child { border-bottom: 1px solid var(--border); }
+  .font-select-wrap { margin-left: 0; }
+  .controls { gap: 6px; }
+  .brand-sub { display: none; }
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">
+    <div class="brand-icon">اُ</div>
+    <div>
+      <div class="brand-name">Roman Urdu Converter</div>
+      <div class="brand-sub">Roman ↔ اردو</div>
+    </div>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- Controls -->
+  <div class="controls">
+    <div class="toggle-group">
+      <button class="toggle-btn active" id="btnRTU" onclick="setMode('rtu')">Roman → اردو</button>
+      <button class="toggle-btn"        id="btnUTR" onclick="setMode('utr')">اردو → Roman</button>
+    </div>
+    <div class="font-select-wrap">
+      <span class="font-select-label">Font:</span>
+      <select class="font-select" id="fontPicker" onchange="changeFont(this.value)">
+        <option value="nastaliq">نستعلیق  Nastaliq</option>
+        <option value="naskh">نسخ  Naskh</option>
+        <option value="amiri">امیری  Amiri</option>
+        <option value="lateef">لطیف  Lateef</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Error -->
+  <div class="error-bar" id="errorBar">
+    <span>⚠</span>
+    <span id="errorMsg">Something went wrong. Please try again.</span>
+  </div>
+
+  <!-- Editor Card -->
+  <div class="editor-card">
+    <div class="editor-grid">
+
+      <div class="editor-pane">
+        <div class="pane-header">
+          <span class="pane-label input-lbl" id="inputLbl">Roman Urdu</span>
+          <span class="char-badge" id="inputCount">0 ch</span>
+        </div>
+        <textarea id="inputArea"
+          placeholder="Yahan Roman Urdu likhain... jaise: main theek hoon, aap kaise hain?"
+          oninput="onInput()"></textarea>
+        <div class="pane-footer">
+          <button class="btn btn-ghost" onclick="clearAll()">Clear</button>
+          <button class="btn btn-ghost" onclick="pasteText()">Paste</button>
+        </div>
+      </div>
+
+      <div class="divider-col"></div>
+
+      <div class="editor-pane">
+        <div class="pane-header">
+          <span class="pane-label output-lbl" id="outputLbl">اردو</span>
+          <span class="char-badge" id="outputCount">0 ch</span>
+        </div>
+        <textarea id="outputArea" placeholder="یہاں اردو آئے گی..." readonly></textarea>
+        <div class="pane-footer">
+          <button class="btn btn-copy" id="copyBtn" onclick="copyOutput()">📋 Copy</button>
+          <button class="btn btn-ghost" onclick="downloadOutput()">⬇ Download</button>
+          <button class="btn btn-wa" onclick="shareWA()">WhatsApp</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <div class="toolbar-left">
+      <label class="check-label"><input type="checkbox" id="chkAuto" checked> Auto convert</label>
+      <label class="check-label"><input type="checkbox" id="chkPoetry"> Poetry mode</label>
+    </div>
+    <button class="convert-btn" id="convertBtn" onclick="convertNow()">
+      <span class="btn-icon">⟷</span>
+      <span class="spinner"></span>
+      Convert
+    </button>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-row">
+    <div class="stat-pill"><span class="stat-num" id="sWords">0</span><span class="stat-lbl">Words</span></div>
+    <div class="stat-pill"><span class="stat-num" id="sChars">0</span><span class="stat-lbl">Chars</span></div>
+    <div class="stat-pill"><span class="stat-num" id="sLines">0</span><span class="stat-lbl">Lines</span></div>
+    <div class="stat-pill"><span class="stat-num" id="sConverts">0</span><span class="stat-lbl">Converted</span></div>
+  </div>
+
+  <!-- Quick Phrases -->
+  <div>
+    <div class="section-head">Quick phrases</div>
+    <div class="chips" id="chipsWrap"></div>
+  </div>
+
+</div>
+
+<div class="footer">Developed by <strong>M Qmr</strong></div>
+<div class="toast" id="toast"></div>
+
+<script>
+const FONTS = {
+  nastaliq: "'Noto Nastaliq Urdu', serif",
+  naskh:    "'Noto Naskh Arabic', serif",
+  amiri:    "'Amiri', serif",
+  lateef:   "'Lateef', serif",
+};
+
+let currentFont = 'nastaliq';
+let currentMode = 'rtu';
+let totalConverts = 0;
+let autoTimer = null;
+let isConverting = false;
+
+function changeFont(f) {
+  currentFont = f;
+  if (currentMode === 'rtu') {
+    document.getElementById('outputArea').style.fontFamily = FONTS[f];
+  } else {
+    document.getElementById('inputArea').style.fontFamily = FONTS[f];
+  }
+}
+
+// Quick phrases
+const phrases = [
+  { label: "Salam",        text: "Assalamu alaikum bhai, kya haal hai?" },
+  { label: "Shukriya",     text: "Bahut shukriya tumhari madad ka" },
+  { label: "Pyar",         text: "Main tumse bohot pyar karta hoon meri jaan" },
+  { label: "Sorry",        text: "Mujhe maafi chahiye galti meri thi" },
+  { label: "Yaad",         text: "Tumhari yaad aati hai raat din" },
+  { label: "Good Morning", text: "Subah bakhair aaj ka din acha guzre" },
+  { label: "Good Night",   text: "Shab bakhair neend acha aaye khuda hafiz" },
+  { label: "Kya haal",     text: "Bhai kya haal hai sab theek hain ghar mein" },
+  { label: "Poetry",       text: "Dil dhoondta hai phir wohi fursat ke raat din" },
+];
+
+const wrap = document.getElementById('chipsWrap');
+phrases.forEach(p => {
+  const c = document.createElement('button');
+  c.className = 'chip';
+  c.textContent = p.label;
+  c.onclick = () => {
+    document.getElementById('inputArea').value = p.text;
+    onInput(); convertNow();
+  };
+  wrap.appendChild(c);
+});
+
+function setMode(mode) {
+  currentMode = mode;
+  const isRTU = mode === 'rtu';
+
+  document.getElementById('btnRTU').classList.toggle('active', isRTU);
+  document.getElementById('btnUTR').classList.toggle('active', !isRTU);
+  document.getElementById('inputLbl').textContent  = isRTU ? 'Roman Urdu' : 'اردو';
+  document.getElementById('outputLbl').textContent = isRTU ? 'اردو' : 'Roman Urdu';
+  document.getElementById('inputLbl').className    = 'pane-label ' + (isRTU ? 'input-lbl' : 'output-lbl');
+  document.getElementById('outputLbl').className   = 'pane-label ' + (isRTU ? 'output-lbl' : 'input-lbl');
+
+  const inp = document.getElementById('inputArea');
+  const out = document.getElementById('outputArea');
+
+  if (isRTU) {
+    inp.style.fontFamily = "'Inter', sans-serif";
+    inp.style.direction  = 'ltr'; inp.style.textAlign = 'left';
+    out.style.fontFamily = FONTS[currentFont];
+    out.style.direction  = 'rtl'; out.style.textAlign = 'right';
+    out.style.color      = 'var(--accent-dk)';
+    inp.placeholder = "Yahan Roman Urdu likhain... jaise: main theek hoon, aap kaise hain?";
+    out.placeholder = "یہاں اردو آئے گی...";
+  } else {
+    inp.style.fontFamily = FONTS[currentFont];
+    inp.style.direction  = 'rtl'; inp.style.textAlign = 'right';
+    out.style.fontFamily = "'Inter', sans-serif";
+    out.style.direction  = 'ltr'; out.style.textAlign = 'left';
+    out.style.color      = 'var(--text)';
+    inp.placeholder = "یہاں اردو لکھیں...";
+    out.placeholder = "Roman Urdu will appear here...";
+  }
+
+  inp.value = ''; out.value = '';
+  updateCounts();
+}
+
+function onInput() {
+  updateCounts();
+  if (document.getElementById('chkAuto').checked) {
+    clearTimeout(autoTimer);
+    autoTimer = setTimeout(convertNow, 600);
+  }
+}
+
+function updateCounts() {
+  const t = document.getElementById('inputArea').value;
+  const words = t.trim() ? t.trim().split(/\s+/).length : 0;
+  document.getElementById('inputCount').textContent = t.length + ' ch';
+  document.getElementById('sWords').textContent = words;
+  document.getElementById('sChars').textContent = t.length;
+  document.getElementById('sLines').textContent = t.split('\n').filter(l => l.trim()).length || 0;
+}
+
+// Copy with fallback
+async function copyText(text) {
+  if (navigator.clipboard && window.isSecureContext) {
+    try { await navigator.clipboard.writeText(text); return true; } catch {}
+  }
+  return new Promise(resolve => {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.cssText = 'position:fixed;top:-9999px;left:-9999px;opacity:0;';
+    document.body.appendChild(ta);
+    ta.focus(); ta.select();
+    try { resolve(document.execCommand('copy')); }
+    catch { resolve(false); }
+    finally { document.body.removeChild(ta); }
+  });
+}
+
+async function copyOutput() {
+  const out = document.getElementById('outputArea').value.trim();
+  if (!out) { showToast('Pehle convert karein!'); return; }
+  const ok = await copyText(out);
+  const btn = document.getElementById('copyBtn');
+  if (ok) {
+    btn.textContent = '✓ Copied!';
+    btn.classList.add('copied');
+    showToast('Copied!');
+    setTimeout(() => { btn.textContent = '📋 Copy'; btn.classList.remove('copied'); }, 2000);
+  } else {
+    const ta = document.getElementById('outputArea');
+    ta.removeAttribute('readonly');
+    ta.select(); ta.setSelectionRange(0, 99999);
+    ta.setAttribute('readonly', true);
+    showToast('Text selected — press Ctrl+C');
+  }
+}
+
+// ── CONVERT via our own Vercel backend ──────────────
+async function convertNow() {
+  const input = document.getElementById('inputArea').value.trim();
+  if (!input || isConverting) return;
+
+  isConverting = true;
+  setLoadingState(true);
+  hideError();
+
+  try {
+    const response = await fetch('/api/convert', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        text: input,
+        mode: currentMode,
+        poetry: document.getElementById('chkPoetry').checked,
+      }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) throw new Error(data.error || 'Server error');
+
+    const result = data.result || '';
+    document.getElementById('outputArea').value = result;
+    document.getElementById('outputCount').textContent = result.length + ' ch';
+    totalConverts++;
+    document.getElementById('sConverts').textContent = totalConverts;
+
+  } catch (err) {
+    showError(err.message || 'Could not connect. Check internet.');
+  } finally {
+    isConverting = false;
+    setLoadingState(false);
+  }
+}
+
+function setLoadingState(on) {
+  const btn = document.getElementById('convertBtn');
+  const out = document.getElementById('outputArea');
+  btn.disabled = on;
+  btn.classList.toggle('converting', on);
+  out.classList.toggle('loading', on);
+  if (on) out.value = '';
+}
+
+function clearAll() {
+  document.getElementById('inputArea').value  = '';
+  document.getElementById('outputArea').value = '';
+  updateCounts();
+  document.getElementById('outputCount').textContent = '0 ch';
+  hideError();
+}
+
+async function pasteText() {
+  try {
+    const text = await navigator.clipboard.readText();
+    document.getElementById('inputArea').value = text;
+    onInput(); convertNow();
+  } catch { showToast('Paste failed — try Ctrl+V'); }
+}
+
+function downloadOutput() {
+  const out = document.getElementById('outputArea').value;
+  if (!out) { showToast('Pehle convert karein!'); return; }
+  const a = Object.assign(document.createElement('a'), {
+    href: URL.createObjectURL(new Blob([out], {type:'text/plain;charset=utf-8'})),
+    download: 'urdu.txt'
+  });
+  a.click(); showToast('Downloaded!');
+}
+
+function shareWA() {
+  const out = document.getElementById('outputArea').value;
+  if (!out) { showToast('Pehle convert karein!'); return; }
+  window.open('https://wa.me/?text=' + encodeURIComponent(out), '_blank');
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+function showError(msg) {
+  document.getElementById('errorMsg').textContent = msg;
+  document.getElementById('errorBar').classList.add('show');
+}
+
+function hideError() { document.getElementById('errorBar').classList.remove('show'); }
+
+document.addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') convertNow();
+});
+
+changeFont('nastaliq');
+</script>
+</body>
+</html>
